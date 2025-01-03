@@ -1,25 +1,29 @@
 import {
   Dimensions,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import React, { useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import PagerView from "react-native-pager-view";
-import { useTheme } from "@react-navigation/native";
+import { DarkTheme, useTheme } from "@react-navigation/native";
 import { dark, light } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useForm, Controller } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
-import { saveUsername, selectUserData } from "@/src/userSlice";
+import {
+  saveUsername,
+  saveUserPreferences,
+  selectUserData,
+} from "@/src/userSlice";
 import { AppDispatch } from "@/src/store";
 import { GitHubTopics } from "@/utils/data";
+import { router } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { height, width } = Dimensions.get("window");
 
@@ -27,9 +31,11 @@ const OnBoarding = () => {
   const theme = useTheme();
   const isDarkTheme = theme.dark;
 
+  const [error, setError] = useState(false);
+
   const pagerRef = useRef<PagerView | null>(null);
   const dispatch = useDispatch<AppDispatch>();
-  const { name } = useSelector(selectUserData);
+  const { name, userPrferences } = useSelector(selectUserData);
 
   const {
     control,
@@ -47,6 +53,25 @@ const OnBoarding = () => {
 
   const handleNext = (pageNo: number) => {
     pagerRef.current?.setPage(pageNo);
+  };
+
+  const handleComplete = async () => {
+    if (userPrferences?.length < 4) {
+      setError(true);
+    } else {
+      setError(false);
+      await AsyncStorage.setItem("@onboarded", "1");
+      router.replace("./(home)/");
+    }
+  };
+
+  const addPreference = (topic: string) => {
+    try {
+      dispatch(saveUserPreferences(topic));
+      setError(false)
+    } catch (error) {
+      console.log("Error saving preference:", error);
+    }
   };
 
   const FirstPage = () => {
@@ -134,7 +159,7 @@ const OnBoarding = () => {
           render={({ field: { onChange, onBlur, value } }) => (
             <TextInput
               inputMode="text"
-              placeholder="First name"
+              placeholder="Enter your name"
               onBlur={onBlur}
               onChangeText={onChange}
               value={value}
@@ -203,7 +228,7 @@ const OnBoarding = () => {
               { color: isDarkTheme ? dark.text : light.text },
             ]}
           >
-            {name}
+            Hi 👋🏼 {name}!
           </Text>
           <View>
             <Text
@@ -227,7 +252,7 @@ const OnBoarding = () => {
             style={{
               flexDirection: "row",
               flexWrap: "wrap",
-              gap: 4,
+              gap: 6,
               alignItems: "center",
               justifyContent: "center",
             }}
@@ -235,15 +260,23 @@ const OnBoarding = () => {
             {GitHubTopics.map((topic, index) => {
               return (
                 <TouchableOpacity
+                  activeOpacity={0.7}
                   style={{
                     backgroundColor: isDarkTheme
                       ? dark.secondary
                       : light.secondary,
                     padding: 4,
-                    paddingHorizontal: 6,
-                    borderRadius: 4,
+                    paddingHorizontal: 8,
+                    borderRadius: 8,
+                    borderWidth: 1,
+                    borderColor: userPrferences?.includes(topic)
+                      ? isDarkTheme
+                        ? dark.text
+                        : "000"
+                      : "transparent",
                   }}
                   key={index}
+                  onPress={() => addPreference(topic)}
                 >
                   <Text style={{ color: isDarkTheme ? dark.text : light.text }}>
                     #{topic}
@@ -251,6 +284,11 @@ const OnBoarding = () => {
                 </TouchableOpacity>
               );
             })}
+            {error && (
+              <Text style={{ color: "red" }}>
+                Please select atleast 3 topics
+              </Text>
+            )}
           </View>
         </View>
         <TouchableOpacity
@@ -261,7 +299,7 @@ const OnBoarding = () => {
               backgroundColor: isDarkTheme ? dark.text : light.text,
             },
           ]}
-          onPress={() => handleNext(3)}
+          onPress={handleComplete}
         >
           <Text
             style={[
@@ -278,22 +316,16 @@ const OnBoarding = () => {
 
   return (
     <View style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
+      <PagerView
+        style={styles.pagerView}
+        initialPage={0}
+        // scrollEnabled={false}
+        ref={pagerRef}
       >
-        <PagerView
-          style={styles.pagerView}
-          initialPage={0}
-          keyboardDismissMode="none"
-          scrollEnabled={false}
-          ref={pagerRef}
-        >
-          <FirstPage key="1" />
-          <SecondPage key="2" />
-          <ThirdPage key="3" />
-        </PagerView>
-      </KeyboardAvoidingView>
+        <FirstPage key="1" />
+        <SecondPage key="2" />
+        <ThirdPage key="3" />
+      </PagerView>
     </View>
   );
 };

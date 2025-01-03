@@ -8,7 +8,7 @@ export const useOnboardingState = (): boolean | null => {
     const fetchOnboardingState = async () => {
       try {
         const value = await AsyncStorage.getItem("@onboarded");
-        setIsOnboarded(value === "1"); // Assuming '1' means onboarded
+        setIsOnboarded(value === "1"); // '1' means onboarded
       } catch (e) {
         console.error("Error fetching onboarding state:", e);
         setIsOnboarded(false); // Default to false on error

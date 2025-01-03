@@ -10,7 +10,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 import { useColorScheme } from "react-native";
 import "react-native-reanimated";
 import { Provider } from "react-redux";
@@ -65,16 +65,18 @@ function RootLayoutNav({ isOnboarded }: RootLayoutNavProps) {
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-        <Stack initialRouteName={isOnboarded ? "(home)" : "onBoardingScreen"}>
+        <Stack initialRouteName={isOnboarded ? "(home)" : "index"}>
           <Stack.Screen
-            redirect={isOnboarded ? true : false}
-            name="onBoardingScreen"
-            options={{ headerShown: false }}
+            name="index"
+            options={{ headerShown: false, animation: "fade" }}
           />
           <Stack.Screen
             name="(home)"
-            redirect={isOnboarded ? false : true}
-            options={{ headerShown: false }}
+            options={{ headerShown: false, animation: "fade" }}
+          />
+          <Stack.Screen
+            name="onBoarding"
+            options={{ headerShown: false, animation: "fade" }}
           />
         </Stack>
       </ThemeProvider>
