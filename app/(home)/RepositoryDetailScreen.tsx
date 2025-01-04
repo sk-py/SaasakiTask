@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,16 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-} from 'react-native';
-import { useTheme } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-import { format } from 'date-fns';
+  Dimensions,
+  Linking,
+} from "react-native";
+import { useTheme } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { format } from "date-fns";
+import { useSelector, useDispatch } from "react-redux";
+import { selectRepos, toggleFavorite } from "@/src/repoSlice";
+import { Stack, useGlobalSearchParams } from "expo-router";
+import { dark, light } from "@/constants/Colors";
 
 interface Contributor {
   id: number;
@@ -33,115 +39,213 @@ interface Repository {
   language: string;
   created_at: string;
   updated_at: string;
+  html_url: string;
+  isFavorite?: boolean;
 }
 
-const RepositoryDetailScreen = ({ route }) => {
-  const { repository } = route.params;
+const { height } = Dimensions.get("window");
+
+const RepositoryDetailScreen = () => {
+  const [repository, setRepository] = useState<Repository | null>(null);
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const theme = useTheme();
   const isDarkTheme = theme.dark;
+  const dispatch = useDispatch();
+
+  const { data, favourites } = useSelector(selectRepos);
+  const params = useGlobalSearchParams();
 
   useEffect(() => {
-    fetchContributors();
-  }, []);
+    const repo = data.find((item) => item.id.toString() === params.id);
+    setRepository(repo);
+    if (repo) {
+      fetchContributors(repo.full_name);
+    }
+  }, [params, data]);
 
-  const fetchContributors = async () => {
+  const fetchContributors = async (fullName: string) => {
     try {
       const response = await fetch(
-        `https://api.github.com/repos/${repository.full_name}/contributors`
+        `https://api.github.com/repos/${fullName}/contributors`
       );
       const data = await response.json();
       setContributors(data);
-      setIsLoading(false);
     } catch (error) {
-      console.error('Error fetching contributors:', error);
+      console.error("Error fetching contributors:", error);
+    } finally {
       setIsLoading(false);
     }
   };
 
-  const renderContributor = ({ item }: { item: Contributor }) => (
-    <View style={styles.contributorItem}>
-      <Image source={{ uri: item.avatar_url }} style={styles.contributorAvatar} />
-      <Text style={[styles.contributorName, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-        {item.login}
-      </Text>
-    </View>
-  );
+  const handleToggleFavorite = () => {
+    if (repository) {
+      dispatch(toggleFavorite(repository.id.toString()));
+    }
+  };
+
+  const handleOpenRepository = () => {
+    if (repository) {
+      Linking.openURL(repository.html_url);
+    }
+  };
+
+  if (!repository) {
+    return (
+      <ActivityIndicator
+        size="large"
+        color={isDarkTheme ? dark.text : light.text}
+      />
+    );
+  }
 
   return (
-    <ScrollView
-      style={[
-        styles.container,
-        { backgroundColor: isDarkTheme ? '#1c1c1c' : '#ffffff' },
-      ]}
-    >
-      <View style={styles.header}>
-        <Image
-          source={{ uri: repository.owner.avatar_url }}
-          style={styles.ownerAvatar}
-        />
-        <View style={styles.headerText}>
-          <Text style={[styles.repositoryName, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-            {repository.name}
-          </Text>
-          <Text style={[styles.ownerName, { color: isDarkTheme ? '#cccccc' : '#666666' }]}>
-            by {repository.owner.login}
-          </Text>
-        </View>
-      </View>
-
-      <Text style={[styles.description, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-        {repository.description}
-      </Text>
-
-      <View style={styles.statsContainer}>
-        <View style={styles.stat}>
-          <Ionicons name="star" size={20} color={isDarkTheme ? '#ffffff' : '#000000'} />
-          <Text style={[styles.statText, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-            {repository.stargazers_count}
-          </Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="git-branch" size={20} color={isDarkTheme ? '#ffffff' : '#000000'} />
-          <Text style={[styles.statText, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-            {repository.forks_count}
-          </Text>
-        </View>
-        <View style={styles.stat}>
-          <Ionicons name="code-slash" size={20} color={isDarkTheme ? '#ffffff' : '#000000'} />
-          <Text style={[styles.statText, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-            {repository.language}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.dateContainer}>
-        <Text style={[styles.dateText, { color: isDarkTheme ? '#cccccc' : '#666666' }]}>
-          Created: {format(new Date(repository.created_at), 'MMM d, yyyy')}
-        </Text>
-        <Text style={[styles.dateText, { color: isDarkTheme ? '#cccccc' : '#666666' }]}>
-          Last updated: {format(new Date(repository.updated_at), 'MMM d, yyyy')}
-        </Text>
-      </View>
-
-      <View style={styles.contributorsSection}>
-        <Text style={[styles.sectionTitle, { color: isDarkTheme ? '#ffffff' : '#000000' }]}>
-          Contributors
-        </Text>
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#0366d6" />
-        ) : (
-          <FlatList
-            data={contributors}
-            renderItem={renderContributor}
-            keyExtractor={(item) => item.id.toString()}
-            horizontal
-            showsHorizontalScrollIndicator={false}
+    <>
+      <Stack.Screen options={{ headerShown: true, title: repository.name }} />
+      <ScrollView
+        style={[styles.container, isDarkTheme && styles.containerDark]}
+      >
+        <View style={styles.header}>
+          <Image
+            source={{ uri: repository.owner.avatar_url }}
+            style={styles.ownerAvatar}
           />
-        )}
-      </View>
-    </ScrollView>
+          <View style={styles.headerText}>
+            <Text
+              style={[styles.repositoryName, isDarkTheme && styles.textDark]}
+            >
+              {repository.name}
+            </Text>
+            <Text
+              style={[
+                styles.ownerName,
+                isDarkTheme && styles.textSecondaryDark,
+              ]}
+            >
+              @{repository.owner.login}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={handleToggleFavorite}
+            style={styles.favoriteButton}
+          >
+            <Ionicons
+              name={
+                favourites.includes(repository.id.toString())
+                  ? "heart"
+                  : "heart-outline"
+              }
+              size={24}
+              color={
+                favourites.includes(repository.id.toString()) ? "red" : "grey"
+              }
+            />
+          </TouchableOpacity>
+        </View>
+
+        <Text style={[styles.description, isDarkTheme && styles.textDark]}>
+          {repository.description}
+        </Text>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.stat}>
+            <Ionicons
+              name="star"
+              size={16}
+              color={isDarkTheme ? dark.text : light.text}
+            />
+            <Text style={[styles.statText, isDarkTheme && styles.textDark]}>
+              {repository.stargazers_count}
+            </Text>
+          </View>
+          <View style={styles.stat}>
+            <Ionicons
+              name="git-network"
+              size={16}
+              color={isDarkTheme ? dark.text : light.text}
+            />
+            <Text style={[styles.statText, isDarkTheme && styles.textDark]}>
+              {repository.forks_count}
+            </Text>
+          </View>
+          <View style={styles.stat}>
+            <View
+              style={[styles.languageDot, { backgroundColor: repository.language.length % 2 == 0 ? "#2b7489" : "orange" }]}
+            />
+            <Text style={[styles.statText, isDarkTheme && styles.textDark]}>
+              {repository.language}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.dateContainer}>
+          <Text
+            style={[styles.dateText, isDarkTheme && styles.textSecondaryDark]}
+          >
+            Created: {format(new Date(repository.created_at), "PPP")}
+          </Text>
+          <Text
+            style={[styles.dateText, isDarkTheme && styles.textSecondaryDark]}
+          >
+            Last updated: {format(new Date(repository.updated_at), "PPP")}
+          </Text>
+        </View>
+
+        <View style={styles.contributorsSection}>
+          <Text style={[styles.sectionTitle, isDarkTheme && styles.textDark]}>
+            Contributors
+          </Text>
+          {isLoading ? (
+            <ActivityIndicator
+              size="small"
+              color={isDarkTheme ? dark.text : light.text}
+            />
+          ) : (
+            <FlatList
+              data={contributors}
+              renderItem={({ item }) => (
+                <View style={styles.contributorItem}>
+                  <Image
+                    source={{ uri: item.avatar_url }}
+                    style={styles.contributorAvatar}
+                  />
+                  <Text
+                    style={[
+                      styles.contributorName,
+                      isDarkTheme && styles.textSecondaryDark,
+                    ]}
+                  >
+                    {item.login}
+                  </Text>
+                </View>
+              )}
+              keyExtractor={(item) => item.id.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+            />
+          )}
+        </View>
+      </ScrollView>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        style={[
+          styles.openRepoButton,
+          {
+            backgroundColor: !isDarkTheme ? dark.background : light.background,
+          },
+        ]}
+        onPress={handleOpenRepository}
+      >
+        <Text
+          style={[
+            styles.openRepoButtonText,
+            { color: !isDarkTheme ? dark.text : light.text },
+          ]}
+        >
+          Open Repository
+        </Text>
+      </TouchableOpacity>
+    </>
   );
 };
 
@@ -149,10 +253,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    backgroundColor: light.background,
+  },
+  containerDark: {
+    backgroundColor: dark.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 16,
   },
   ownerAvatar: {
@@ -161,31 +269,39 @@ const styles = StyleSheet.create({
     borderRadius: 25,
   },
   headerText: {
+    flex: 1,
     marginLeft: 16,
   },
   repositoryName: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    color: light.text,
   },
   ownerName: {
     fontSize: 16,
+    color: light.secondaryText,
+  },
+  favoriteButton: {
+    padding: 8,
   },
   description: {
     fontSize: 16,
     marginBottom: 16,
+    color: light.text,
   },
   statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   statText: {
     fontSize: 16,
     marginLeft: 4,
+    color: light.text,
   },
   dateContainer: {
     marginBottom: 16,
@@ -193,17 +309,20 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     marginBottom: 4,
+    color: light.secondaryText,
   },
   contributorsSection: {
-    marginTop: 16,
+    marginVertical: 36,
+    marginBottom: height * 0.2,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 8,
+    color: light.text,
   },
   contributorItem: {
-    alignItems: 'center',
+    alignItems: "center",
     marginRight: 16,
   },
   contributorAvatar: {
@@ -214,9 +333,34 @@ const styles = StyleSheet.create({
   },
   contributorName: {
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
+    color: light.secondaryText,
+  },
+  openRepoButton: {
+    position: "absolute",
+    bottom: 16,
+    left: 16,
+    right: 16,
+    padding: 16,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  openRepoButtonText: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  textDark: {
+    color: dark.text,
+  },
+  textSecondaryDark: {
+    color: dark.secondaryText,
+  },
+  languageDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 12,
+    marginRight: 3,
   },
 });
 
 export default RepositoryDetailScreen;
-

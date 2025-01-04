@@ -14,38 +14,42 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@react-navigation/native";
 import { dark, light } from "@/constants/Colors";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
+import { FontAwesome6, Ionicons } from "@expo/vector-icons";
 import RepositoryCard from "@/components/RepoCard";
 import SkeletonLoader from "@/components/SkeletonLoader";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchRecommendedRepos,
+  searchRepos,
+  Repository,
+} from "@/src/repoSlice";
+import { RootState } from "@/src/store"; // Assuming you have a store.ts file
+import { router } from "expo-router";
 
 const { height, width, fontScale } = Dimensions.get("window");
-
-interface Repository {
-  id: number;
-  owner: {
-    avatar_url: string;
-    login: string;
-  };
-  name: string;
-  description: string;
-  stargazers_count: number;
-  forks_count: number;
-  language: string;
-}
 
 const Index = () => {
   const theme = useTheme();
   const isDarkTheme = theme.dark;
+  const dispatch = useDispatch();
 
   const [username, setUsername] = useState<string | null>(null);
   const [userPreference, setUserPreference] = useState<string[]>([]);
   const [searchText, setSearchText] = useState<string>("");
-  const [recommendedRepos, setRecommendedRepos] = useState<Repository[]>([]);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  const {
+    data: repositories,
+    loading,
+    error,
+    favourites,
+  } = useSelector((state: RootState) => state.repos);
 
   const fetchUserData = useCallback(async () => {
     try {
-      const data = await AsyncStorage.multiGet(["@username", "@userPreferences"]);
+      const data = await AsyncStorage.multiGet([
+        "@username",
+        "@userPreferences",
+      ]);
       const name = data[0][1];
       const preferences = data[1][1] ? JSON.parse(data[1][1]) : [];
       setUsername(name);
@@ -55,57 +59,30 @@ const Index = () => {
     }
   }, []);
 
-  const getRecommendedRepositories = useCallback(async (preferences: string[]): Promise<Repository[]> => {
-    const apiUrl = "https://api.github.com/search/repositories";
-    const query = preferences.join(" OR ");
-    const params = new URLSearchParams({
-      q: query,
-      sort: "stars",
-      order: "desc",
-      per_page: "10",
-    });
-
-    try {
-      const response = await fetch(`${apiUrl}?${params}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch repositories");
-      }
-      const data = await response.json();
-      return data.items as Repository[];
-    } catch (error) {
-      console.error("Error fetching recommended repositories:", error);
-      return [];
-    }
-  }, []);
-
-  const fetchRecommendedRepos = useCallback(async () => {
-    if (userPreference.length > 0) {
-      setIsLoading(true);
-      const repos = await getRecommendedRepositories(userPreference);
-      setRecommendedRepos(repos);
-      setIsLoading(false);
-    }
-  }, [userPreference, getRecommendedRepositories]);
-
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
 
   useEffect(() => {
     if (userPreference.length > 0) {
-      fetchRecommendedRepos();
+      dispatch(fetchRecommendedRepos(userPreference) as any);
     }
-  }, [userPreference, fetchRecommendedRepos]);
+  }, [userPreference, dispatch]);
 
   const handleSearch = (text: string) => {
     setSearchText(text);
   };
 
+  const handleSearchSubmit = () => {
+    if (searchText.trim()) {
+      dispatch(searchRepos(searchText) as any);
+    }
+  };
+
   const renderItem = ({ item }: ListRenderItemInfo<Repository>) => (
     <RepositoryCard
       repository={item}
-      onToggleFavorite={() => {}}
-      isFavorite={true}
+      isFavorite={favourites.includes(item.id.toString())}
     />
   );
 
@@ -126,20 +103,37 @@ const Index = () => {
               style={styles.headerIcon}
             />
             <View>
-              <Text style={[styles.headerTitle, { color: isDarkTheme ? dark.text : light.text }]}>
+              <Text
+                style={[
+                  styles.headerTitle,
+                  { color: isDarkTheme ? dark.text : light.text },
+                ]}
+              >
                 GitHub Explorer
               </Text>
-              <Text style={[styles.headerSubTitle, { color: isDarkTheme ? dark.text : light.text }]}>
+              <Text
+                style={[
+                  styles.headerSubTitle,
+                  { color: isDarkTheme ? dark.text : light.text },
+                ]}
+              >
                 Explore GitHub repositories and more!
               </Text>
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={async () => await AsyncStorage.removeItem("@onboarded")}>
-              <Ionicons name="heart-outline" size={30} color="#fd5c63" />
+            <TouchableOpacity
+              onPress={()=>router.push("/favourites")}
+            >
+              <FontAwesome6 name="heart-circle-check" size={30} color="#fd5c63" />
+              {/* <Ionicons name="heart-outline"  /> */}
             </TouchableOpacity>
             <TouchableOpacity>
-              <Ionicons name={isDarkTheme ? "moon" : "sunny"} size={30} color="orange" />
+              <Ionicons
+                name={isDarkTheme ? "moon" : "sunny"}
+                size={30}
+                color="orange"
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -147,7 +141,12 @@ const Index = () => {
         {/* Search Bar */}
         <View style={styles.container}>
           <View style={styles.searchContainer}>
-            <Ionicons name="search" size={20} color="#6e7781" style={styles.searchIcon} />
+            <Ionicons
+              name="search"
+              size={20}
+              color="#6e7781"
+              style={styles.searchIcon}
+            />
             <TextInput
               style={styles.input}
               placeholder="Search repositories"
@@ -155,20 +154,25 @@ const Index = () => {
               value={searchText}
               onChangeText={handleSearch}
               inputMode="search"
-              onSubmitEditing={() => {}}
+              onSubmitEditing={handleSearchSubmit}
               returnKeyType="search"
             />
           </View>
         </View>
 
-        {/* Recommended Repositories */}
+        {/* Repositories List */}
         <View style={styles.recommendedSection}>
-          <Text style={[styles.recommendedTitle, { color: isDarkTheme ? dark.secondaryText : light.secondaryText }]}>
-            Some recommended repositories for you
+          <Text
+            style={[
+              styles.recommendedTitle,
+              { color: isDarkTheme ? dark.secondaryText : light.secondaryText },
+            ]}
+          >
+            {searchText ? "Search Results" : "Recommended Repositories"}
           </Text>
         </View>
 
-        {isLoading ? (
+        {loading ? (
           <FlatList
             data={[1, 2, 3, 4]}
             renderItem={({ item }) => <SkeletonLoader key={item} />}
@@ -176,10 +180,14 @@ const Index = () => {
           />
         ) : (
           <FlatList
-            data={recommendedRepos}
+            data={repositories}
             renderItem={renderItem}
             keyExtractor={(item) => item.id.toString()}
-            ListEmptyComponent={<Text style={styles.emptyText}>No recommended repositories found.</Text>}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>
+                {error || "No repositories found."}
+              </Text>
+            }
           />
         )}
       </View>
@@ -241,6 +249,7 @@ const styles = StyleSheet.create({
   },
   recommendedSection: {
     margin: "2%",
+    marginTop:"6%",
   },
   recommendedTitle: {
     paddingLeft: "2%",

@@ -19,7 +19,7 @@ export const saveUsername = createAsyncThunk<
   }
 });
 
-// Thunk for saving preferences
+// Thunk for saving preferences 
 export const saveUserPreferences = createAsyncThunk<
   string[], // Type of the resolved value (updated preferences array)
   string, // Type of the argument passed to the thunk

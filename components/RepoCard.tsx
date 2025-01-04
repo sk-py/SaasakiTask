@@ -2,10 +2,12 @@ import React from "react";
 import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
+import { useDispatch } from "react-redux";
+import { toggleFavorite } from "@/src/repoSlice";
 
 export default function RepositoryCard({
   repository,
-//   onToggleFavorite,
+  //   onToggleFavorite,
   isFavorite,
 }: any) {
   const formatNumber = (num: number): string => {
@@ -16,20 +18,25 @@ export default function RepositoryCard({
       return (num / 1000).toFixed(1) + "K";
     }
     return num.toString();
-    };
-    
-    const repo = repository
+  };
 
-    const onToggleFavorite = () => {
-        console.log("Added to favs");
-  }
-  
-  const handleRepositoryPress = (repository:any) => {
-    router.navigate({ pathname:'/RepositoryDetailScreen',params:repository});
+  const repo = repository;
+
+  const dispatch = useDispatch()
+
+  const onToggleFavorite = () => {
+    dispatch(toggleFavorite(repository.id.toString()))
+  };
+
+  const handleRepositoryPress = () => {
+    router.navigate({
+      pathname: "/RepositoryDetailScreen",
+      params: { id: repo.id },
+    });
   };
 
   return (
-    <TouchableOpacity onPress={handleRepositoryPress} style={styles.card}>
+    <TouchableOpacity activeOpacity={0.7} onPress={handleRepositoryPress} style={styles.card}>
       <View style={styles.header}>
         <View style={styles.userInfo}>
           <Image
@@ -63,9 +70,7 @@ export default function RepositoryCard({
         </View>
         <View style={styles.stat}>
           <Ionicons name="git-branch" size={16} color="#6e7781" />
-          <Text style={styles.statText}>
-            {formatNumber(repo.forks_count)}
-          </Text>
+          <Text style={styles.statText}>{formatNumber(repo.forks_count)}</Text>
         </View>
         <View style={styles.languageContainer}>
           <View style={[styles.languageDot, { backgroundColor: "#2b7489" }]} />
