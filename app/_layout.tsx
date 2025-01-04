@@ -1,3 +1,4 @@
+import { dark, light } from "@/constants/Colors";
 import { useOnboardingState } from "@/hooks/useOnboardingState";
 import store from "@/src/store";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -64,7 +65,12 @@ function RootLayoutNav({ isOnboarded }: RootLayoutNavProps) {
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+        <StatusBar
+          style={colorScheme === "dark" ? "light" : "dark"}
+          backgroundColor={
+            colorScheme === "dark" ? dark.background : light.background
+          }
+        />
         <Stack initialRouteName={isOnboarded ? "(home)" : "index"}>
           <Stack.Screen
             name="index"

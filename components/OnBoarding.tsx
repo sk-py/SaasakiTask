@@ -68,7 +68,7 @@ const OnBoarding = () => {
   const addPreference = (topic: string) => {
     try {
       dispatch(saveUserPreferences(topic));
-      setError(false)
+      setError(false);
     } catch (error) {
       console.log("Error saving preference:", error);
     }
@@ -219,7 +219,7 @@ const OnBoarding = () => {
           name="person-circle"
           color={isDarkTheme ? light.secondary : dark.secondary}
           size={width * 0.2}
-          style={{ marginTop: height * 0.1 }}
+          // style={{ marginTop: height * 0.1 }}
         />
         <View style={styles.textContainer}>
           <Text
@@ -237,7 +237,7 @@ const OnBoarding = () => {
                 { color: isDarkTheme ? dark.text : light.text },
               ]}
             >
-              Select at least 3-5 topics that interest you.
+              Select at least 4-6 topics that interest you.
             </Text>
             <Text
               style={[
@@ -286,7 +286,7 @@ const OnBoarding = () => {
             })}
             {error && (
               <Text style={{ color: "red" }}>
-                Please select atleast 3 topics
+                Please select atleast 4 topics
               </Text>
             )}
           </View>
@@ -319,7 +319,7 @@ const OnBoarding = () => {
       <PagerView
         style={styles.pagerView}
         initialPage={0}
-        // scrollEnabled={false}
+        scrollEnabled={false}
         ref={pagerRef}
       >
         <FirstPage key="1" />
@@ -351,8 +351,9 @@ const styles = StyleSheet.create({
   pageContainer2: {
     height: "100%",
     alignItems: "center",
-    justifyContent: "flex-start",
+    justifyContent: "center",
     gap: 12,
+    paddingBottom: height * 0.1,
     position: "relative",
   },
   logo: {
@@ -365,7 +366,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
-    margin: "4%",
+    marginTop: "3%",
   },
   titleText: {
     fontFamily: "SFBold",
@@ -395,7 +396,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 4,
     position: "absolute",
-    bottom: height * 0.1,
+    bottom: height * 0.06,
   },
   continueButtonText: {
     textAlign: "center",
