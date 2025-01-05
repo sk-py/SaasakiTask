@@ -79,7 +79,8 @@ A React Native application that allows users to explore GitHub repositories by s
 
 The APK file for the app is included in the repository under the `apk` folder.  
 You can download it [here](apk/base.apk).  
-
+OR
+Google drive [Link](https://drive.google.com/file/d/1N4i5XehVMYmbPxrsbklj4az3K2I5Ea0o/view?usp=drive_link)
 ---
 
 ## 🔧 Installation and Running Locally
