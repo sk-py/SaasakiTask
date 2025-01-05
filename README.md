@@ -58,7 +58,8 @@ A React Native application that allows users to explore GitHub repositories by s
 ## 📸 Screenshots
 
 1. Onboarding Screen
-![Onboarding Screen](screenshots/onboarding.png)  
+| ![Onboarding Screen](screenshots/onboarding.png) | ![Onboarding Screen 2](screenshots/onboarding2.png) |
+|:---:|:---:|
 2. Home Screen with Recommended Repositories
 ![Home Screen](screenshots/home.png)
 3. Search Results Screen
