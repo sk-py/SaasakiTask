@@ -22,11 +22,12 @@ import {
   fetchRecommendedRepos,
   searchRepos,
   Repository,
+  resetPage,
 } from "@/src/repoSlice";
 import { RootState } from "@/src/store"; // Assuming you have a store.ts file
 import { router } from "expo-router";
 
-const { height, width, fontScale } = Dimensions.get("window");
+const {  width, fontScale } = Dimensions.get("window");
 
 const Index = () => {
   const theme = useTheme();
@@ -42,6 +43,7 @@ const Index = () => {
     loading,
     error,
     favourites,
+    currentPage,
   } = useSelector((state: RootState) => state.repos);
 
   const fetchUserData = useCallback(async () => {
@@ -74,8 +76,15 @@ const Index = () => {
   };
 
   const handleSearchSubmit = () => {
-    if (searchText.trim()) {
-      dispatch(searchRepos(searchText) as any);
+    dispatch(resetPage());
+    const query = searchText.trim();
+    if (query) {
+      router.navigate({
+        pathname: "/searchResults",
+        params: { query: searchText },
+      });
+      dispatch(searchRepos({ query: searchText, page: currentPage }) as any);
+      setSearchText("");
     }
   };
 
@@ -122,18 +131,13 @@ const Index = () => {
             </View>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity
-              onPress={()=>router.push("/favourites")}
-            >
-              <FontAwesome6 name="heart-circle-check" size={30} color="#fd5c63" />
-              {/* <Ionicons name="heart-outline"  /> */}
-            </TouchableOpacity>
-            <TouchableOpacity>
-              <Ionicons
-                name={isDarkTheme ? "moon" : "sunny"}
+            <TouchableOpacity onPress={() => router.push("/favourites")}>
+              <FontAwesome6
+                name="heart-circle-check"
                 size={30}
-                color="orange"
+                color="#fd5c63"
               />
+              {/* <Ionicons name="heart-outline"  /> */}
             </TouchableOpacity>
           </View>
         </View>
@@ -249,7 +253,7 @@ const styles = StyleSheet.create({
   },
   recommendedSection: {
     margin: "2%",
-    marginTop:"6%",
+    marginTop: "6%",
   },
   recommendedTitle: {
     paddingLeft: "2%",

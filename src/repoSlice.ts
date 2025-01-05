@@ -13,6 +13,9 @@ export interface Repository {
   forks_count: number;
   language: string;
   full_name: string;
+  created_at: string;
+  updated_at: string;
+  html_url: string;
 }
 
 interface RepoState {
@@ -20,6 +23,13 @@ interface RepoState {
   loading: boolean;
   error: string | null;
   favourites: string[];
+  searched: Repository[];
+  currentPage: number;
+}
+
+interface SearchParams {
+  query: string;
+  page: number;
 }
 
 export const fetchRecommendedRepos = createAsyncThunk<
@@ -48,42 +58,18 @@ export const fetchRecommendedRepos = createAsyncThunk<
   }
 });
 
-// export const searchRepos = createAsyncThunk<
-//   Repository[],
-//   string,
-//   { rejectValue: string }
-// >("repos/search", async (searchQuery, { rejectWithValue }) => {
-//   const apiUrl = "https://api.github.com/search/repositories";
-//   const params = new URLSearchParams({
-//     q: searchQuery,
-//     sort: "stars",
-//     order: "desc",
-//     per_page: "1",
-//   });
-
-//   try {
-//     const response = await fetch(`${apiUrl}?${params}`);
-//     if (!response.ok) {
-//       throw new Error("Failed to search repositories");
-//     }
-//     const data = await response.json();
-//     return data.items as Repository[];
-//   } catch (error) {
-//     return rejectWithValue("Error searching repositories");
-//   }
-// });
-
 export const searchRepos = createAsyncThunk<
   Repository[],
-  string,
+  SearchParams,
   { rejectValue: string }
->("repos/search", async (searchQuery, { rejectWithValue }) => {
+>("repos/search", async ({ query, page }, { rejectWithValue }) => {
   const apiUrl = "https://api.github.com/search/repositories";
   const params = new URLSearchParams({
-    q: `in:name ${searchQuery}`, // This ensures we search in repository names
+    q: `in:name ${query}`, // This ensures we search in repository names
     sort: "stars",
     order: "desc",
-    per_page: "10",
+    per_page: "5",
+    page: page.toString(),
   });
 
   try {
@@ -104,7 +90,9 @@ const repoSlice = createSlice({
     data: [],
     loading: false,
     error: null,
+    searched: [],
     favourites: [],
+    currentPage: 1,
   } as RepoState,
   reducers: {
     toggleFavorite: (state, action) => {
@@ -115,6 +103,9 @@ const repoSlice = createSlice({
       } else {
         state.favourites.push(action.payload);
       }
+    },
+    resetPage: (state) => {
+      state.currentPage = 1;
     },
   },
   extraReducers: (builder) => {
@@ -149,23 +140,37 @@ const repoSlice = createSlice({
         searchRepos.fulfilled,
         (state, action: PayloadAction<Repository[]>) => {
           state.loading = false;
-          action.payload.forEach((repo) => {
-            if (
-              !state.data.some((existingRepo) => existingRepo.id === repo.id)
-            ) {
-              state.data.push(repo);
-            }
-          });
+
+          if (state.currentPage === 1) {
+            // For the first page, replace the entire search results
+            state.searched = action.payload;
+          } else {
+            // For subsequent pages, append new unique items
+            action.payload.forEach((repo) => {
+              if (
+                !state.searched.some(
+                  (existingRepo) => existingRepo.id === repo.id
+                )
+              ) {
+                state.searched.push(repo);
+              }
+            });
+          }
+
+          // Increment the page number after processing
+          state.currentPage += 1;
         }
       )
+
       .addCase(searchRepos.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to search repositories";
+        state.error =
+          action.payload || "Failed to search appropriate repositories";
       });
   },
 });
 
-export const { toggleFavorite } = repoSlice.actions;
+export const { toggleFavorite, resetPage } = repoSlice.actions;
 
 export default repoSlice.reducer;
 export const selectRepos = (state: RootState) => state.repos;

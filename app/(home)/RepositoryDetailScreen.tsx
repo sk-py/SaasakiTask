@@ -46,18 +46,20 @@ interface Repository {
 const { height } = Dimensions.get("window");
 
 const RepositoryDetailScreen = () => {
-  const [repository, setRepository] = useState<Repository | null>(null);
+  const [repository, setRepository] = useState<Repository>();
   const [contributors, setContributors] = useState<Contributor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const theme = useTheme();
   const isDarkTheme = theme.dark;
   const dispatch = useDispatch();
 
-  const { data, favourites } = useSelector(selectRepos);
+  const { data, favourites, searched } = useSelector(selectRepos);
   const params = useGlobalSearchParams();
 
   useEffect(() => {
-    const repo = data.find((item) => item.id.toString() === params.id);
+    const mergedArray = data.concat(searched);
+
+    const repo = mergedArray.find((item) => item.id.toString() === params.id);
     setRepository(repo);
     if (repo) {
       fetchContributors(repo.full_name);
@@ -107,14 +109,14 @@ const RepositoryDetailScreen = () => {
       >
         <View style={styles.header}>
           <Image
-            source={{ uri: repository.owner.avatar_url }}
+            source={{ uri: repository?.owner.avatar_url }}
             style={styles.ownerAvatar}
           />
           <View style={styles.headerText}>
             <Text
               style={[styles.repositoryName, isDarkTheme && styles.textDark]}
             >
-              {repository.name}
+              {repository?.name}
             </Text>
             <Text
               style={[
@@ -122,7 +124,7 @@ const RepositoryDetailScreen = () => {
                 isDarkTheme && styles.textSecondaryDark,
               ]}
             >
-              @{repository.owner.login}
+              @{repository?.owner.login}
             </Text>
           </View>
           <TouchableOpacity
@@ -131,20 +133,20 @@ const RepositoryDetailScreen = () => {
           >
             <Ionicons
               name={
-                favourites.includes(repository.id.toString())
+                favourites.includes(repository?.id.toString())
                   ? "heart"
                   : "heart-outline"
               }
               size={24}
               color={
-                favourites.includes(repository.id.toString()) ? "red" : "grey"
+                favourites.includes(repository?.id.toString()) ? "red" : "grey"
               }
             />
           </TouchableOpacity>
         </View>
 
         <Text style={[styles.description, isDarkTheme && styles.textDark]}>
-          {repository.description}
+          {repository?.description}
         </Text>
 
         <View style={styles.statsContainer}>
@@ -155,7 +157,7 @@ const RepositoryDetailScreen = () => {
               color={isDarkTheme ? dark.text : light.text}
             />
             <Text style={[styles.statText, isDarkTheme && styles.textDark]}>
-              {repository.stargazers_count}
+              {repository?.stargazers_count}
             </Text>
           </View>
           <View style={styles.stat}>
@@ -165,15 +167,20 @@ const RepositoryDetailScreen = () => {
               color={isDarkTheme ? dark.text : light.text}
             />
             <Text style={[styles.statText, isDarkTheme && styles.textDark]}>
-              {repository.forks_count}
+              {repository?.forks_count}
             </Text>
           </View>
           <View style={styles.stat}>
             <View
-              style={[styles.languageDot, { backgroundColor: repository.language.length % 2 == 0 ? "#2b7489" : "orange" }]}
+              style={[
+                styles.languageDot,
+                {
+                  backgroundColor:"#2b7489"
+                }
+              ]}
             />
             <Text style={[styles.statText, isDarkTheme && styles.textDark]}>
-              {repository.language}
+              {repository?.language}
             </Text>
           </View>
         </View>
@@ -182,12 +189,12 @@ const RepositoryDetailScreen = () => {
           <Text
             style={[styles.dateText, isDarkTheme && styles.textSecondaryDark]}
           >
-            Created: {format(new Date(repository.created_at), "PPP")}
+            Created: {format(new Date(repository?.created_at), "PPP")}
           </Text>
           <Text
             style={[styles.dateText, isDarkTheme && styles.textSecondaryDark]}
           >
-            Last updated: {format(new Date(repository.updated_at), "PPP")}
+            Last updated: {format(new Date(repository?.updated_at), "PPP")}
           </Text>
         </View>
 

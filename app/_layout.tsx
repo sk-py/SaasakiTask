@@ -1,3 +1,4 @@
+import Dialog from "@/components/Dialog";
 import { dark, light } from "@/constants/Colors";
 import { useOnboardingState } from "@/hooks/useOnboardingState";
 import store from "@/src/store";
@@ -62,6 +63,7 @@ export default function RootLayout() {
 function RootLayoutNav({ isOnboarded }: RootLayoutNavProps) {
   const colorScheme = useColorScheme();
 
+
   return (
     <Provider store={store}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -85,6 +87,7 @@ function RootLayoutNav({ isOnboarded }: RootLayoutNavProps) {
             options={{ headerShown: false, animation: "fade" }}
           />
         </Stack>
+        <Dialog/>
       </ThemeProvider>
     </Provider>
   );

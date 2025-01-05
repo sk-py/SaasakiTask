@@ -1,43 +1,37 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React from "react";
 import {
   Dimensions,
   FlatList,
   ListRenderItemInfo,
   StyleSheet,
   Text,
-  TextInput,
-  TouchableOpacity,
   View,
-  Image,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@react-navigation/native";
 import { dark, light } from "@/constants/Colors";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Ionicons } from "@expo/vector-icons";
 import RepositoryCard from "@/components/RepoCard";
 import SkeletonLoader from "@/components/SkeletonLoader";
-import { useDispatch, useSelector } from "react-redux";
+import {  useSelector } from "react-redux";
 import {
-  fetchRecommendedRepos,
-  searchRepos,
   Repository,
   selectRepos,
 } from "@/src/repoSlice";
-import { RootState } from "@/src/store"; // Assuming you have a store.ts file
 import { Stack } from "expo-router";
 
-const { height, width, fontScale } = Dimensions.get("window");
+const {  width, fontScale } = Dimensions.get("window");
 
 export const favourites = () => {
   const theme = useTheme();
   const isDarkTheme = theme.dark;
-  const dispatch = useDispatch();
 
-  const { data, favourites } = useSelector(selectRepos);
+  const { data, favourites, searched } = useSelector(selectRepos);
+
+  const mergedArray = data.concat(searched);
 
   const favouriteSet = new Set(favourites.map(String)); // Converting it into set
-  const favouriteRepos = data.filter(({ id }) => favouriteSet.has(String(id)));
+  const favouriteRepos = mergedArray.filter(({ id }) =>
+    favouriteSet.has(String(id))
+  );
 
   //   console.log(favouriteRepos);
 
@@ -60,7 +54,7 @@ export const favourites = () => {
           backgroundColor: isDarkTheme ? dark.background : light.background,
         }}
       >
-        {favouriteRepos?.length < 0 && favouriteRepos == null ? (
+        {favouriteRepos?.length < 0 ? (
           <FlatList
             data={[1, 2, 3, 4]}
             renderItem={({ item }) => <SkeletonLoader key={item} />}
@@ -71,6 +65,18 @@ export const favourites = () => {
             data={favouriteRepos}
             renderItem={renderItem}
             keyExtractor={(item) => item?.id.toString()}
+            ListEmptyComponent={
+              <Text
+                style={{
+                  textAlign: "center",
+                  marginTop: 20,
+                  fontSize: 16,
+                  color: "#6e7781",
+                }}
+              >
+                No repositories marked as favourite.
+              </Text>
+            }
           />
         )}
       </View>
