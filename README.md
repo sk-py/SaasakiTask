@@ -61,17 +61,17 @@ A React Native application that allows users to explore GitHub repositories by s
 | ![Onboarding Screen](screenshots/onboarding.png) | ![Onboarding Screen 2](screenshots/onboarding2.png) |
 |:---:|:---:|
 2. Home Screen with Recommended Repositories
-![Home Screen](screenshots/home.png)
+![Home Screen](screenshots/home.jpg)
 3. Search Results Screen
-![Home Screen](screenshots/search.png)
+![Home Screen](screenshots/search.jpg)
 4. Repository Details Screen
-![Home Screen](screenshots/detail.png)
+![Home Screen](screenshots/detail.jpg)
 5. Favorites Screen
-![Home Screen](screenshots/fav.png)
+![Home Screen](screenshots/fav.jpg)
 6. Dark Mode Example
-![Home Screen](screenshots/home-dark.png)
+![Home Screen](screenshots/home-dark.jpg)
 6. Light Mode Example
-![Home Screen](screenshots/home-light.png)
+![Home Screen](screenshots/home-light.jpg)
 
 ---
 
